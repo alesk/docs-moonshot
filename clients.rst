@@ -1,10 +1,6 @@
 Connecting Clients
 ==================
 
-.. toctree::
-    Tableau
-    Excel
-
 .. contents:: :local:
 
 Tableau

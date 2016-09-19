@@ -1,0 +1,15 @@
+# Override for Makefile
+[{Makefile, makefile, GNUmakefile, Makefile.ps}]
+indent_style = tab
+indent_size = 4
+
+# Restructured text
+[{*.rst}]
+indent_style = space
+indent_size = 2
+
+# MArkdown text
+[{*.md}]
+indent_style = space
+indent_size = 2
+

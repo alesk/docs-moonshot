@@ -26,6 +26,8 @@ project = 'Teftel'
 copyright = '2016, Toptal Analytics Team'
 author = 'Toptal Analytics Team'
 
+exclude_patterns = ['.env']
+
 git_describe = subprocess.check_output('git describe --always', shell=True).decode('utf-8').strip()
 version, release = re.match('(?P<version>\d+.\d+).(?P<release>.*)', git_describe).groups()
 

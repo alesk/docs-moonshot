@@ -12,10 +12,11 @@ Contents
 .. toctree::
    :maxdepth: 2
 
+   README 
+
    BigQuery Tables <schema/index>
 
    clients
-   modules
    glossary
 
 Indices and tables
