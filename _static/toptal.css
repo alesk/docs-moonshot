@@ -1,0 +1,11 @@
+/* give more spaceing inside fields list*/
+#fields li p.first {
+    margin-top: 0em;
+    margin-bottom: 0em;
+    color:inherit;
+}
+
+#fields li p {
+    margin-bottom: 0.75em;
+    color: #666;
+}
