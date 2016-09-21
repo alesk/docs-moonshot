@@ -8,7 +8,7 @@ Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem
 Fields
 ------
 
-.. _`com-toptal-platform-user-id`:
+.. _com-toptal-platform-user-id:
 
 - **id**: int
 

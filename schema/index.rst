@@ -5,5 +5,7 @@ Big Query Tables
    :titlesonly:
 
    roles
-   users 
- 
+   users
+
+   generated/tables/companies
+   generated/tables/roles

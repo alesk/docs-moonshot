@@ -11,6 +11,10 @@ protocol etl {
   record Company {
     @origin("com.toptal.platform.Role#id")
     int company_id;
+
+
+    @origina("com.toptal.platform.Role#id")
+    union {null, @origin("com.toptal.platform.Role#id") int} claimer_id;
   }
 
 } 

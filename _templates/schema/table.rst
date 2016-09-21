@@ -1,24 +1,25 @@
-.. _``{{bq_table | slug}}``::
+.. _{{bq_table | slug}}:
 
-{{table}}
+{{bq_table}}
 =========
 
 {{doc}}
 
 Fields
-======
+------
 
 {% for field in fields %}
-.. _``{{field.id | slug}}``::
+.. _{{field.id | slug}}:
 
-- **{{field.name}}**, {{field.type}}
-  {% if field.doc is not none %}{{field.doc}}{% endif %}
-  {% if field.origin is not none %}
-
-  origin: :ref:``{{field.origin}} <{{field.origin | slug }}>``
-  {% endif %}
+- **{{field.name}}**, {{field.type.type}}
+{% if field.doc is not none %}{{field.doc}}{% endif %}
+{% if field.type.origin is not none %}
+origin: :ref:`{{field.type.origin}} <{{field.type.origin | slug }}>`
+{% endif %}
   {% for usage in field.usages %}
 
-   - :ref:``{{usage}} <{{usage | slug }}>``
+   - :ref:`{{usage}} <{{usage | slug }}>`
+
   {% endfor %}
+
 {% endfor %}
