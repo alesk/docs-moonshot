@@ -1,0 +1,16 @@
+@namespace("com.toptal.etl")
+
+/**
+  Etl protocol
+ */
+protocol etl {
+
+  import idl "platform.avdl";
+
+  @bq-table("companies")
+  record Company {
+    @origin("com.toptal.platform.Role#id")
+    int company_id;
+  }
+
+} 

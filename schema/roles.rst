@@ -27,8 +27,7 @@ Fields
 .. _`com-toptal-platform-role-user_id`:
 
 - **user_id**: int
-
-  origin: :ref:`users.id <com-toptal-platform-user-id>`
+  origin: :ref:`users.id <com-topal-teftel-users-id>`
 
   Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been
 

@@ -2,3 +2,7 @@ _build
 *.swp
 .env
 .ropeproject
+schema/generated
+.idea
+*.iml
+generated

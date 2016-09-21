@@ -17,6 +17,7 @@ Contents
    BigQuery Tables <schema/index>
 
    clients
+   config
    glossary
 
 Indices and tables

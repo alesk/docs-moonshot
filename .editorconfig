@@ -4,12 +4,17 @@ indent_style = tab
 indent_size = 4
 
 # Restructured text
-[{*.rst}]
+[*.rst]
 indent_style = space
 indent_size = 2
 
-# MArkdown text
-[{*.md}]
+# Markdown text
+[*.md]
+indent_style = space
+indent_size = 2
+
+# Avdl files
+[*.avdl]
 indent_style = space
 indent_size = 2
 

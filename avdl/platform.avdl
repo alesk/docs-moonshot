@@ -1,0 +1,23 @@
+@namespace("com.toptal.platform")
+
+/**
+ Platform protocol
+*/
+protocol platform {
+
+  enum RoleType {
+    developer,
+    designer,
+    businees_manager
+  }
+
+  @bq-table("roles")
+  record Role {
+    /** unique id of a role */
+    int id;
+    union {null, RoleType} role_type;
+    union {null, int} number_of_logins;
+  }
+
+
+}
