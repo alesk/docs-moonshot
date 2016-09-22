@@ -13,7 +13,7 @@ from jinja2 import Environment, FileSystemLoader
 env = Environment(
     loader=FileSystemLoader(
         os.path.join(os.path.dirname(__file__), '_templates', 'schema')),
-    trim_blocks=True)
+    trim_blocks=True, lstrip_blocks=True)
 
 
 def slug(text):

@@ -8,8 +8,9 @@ AVRO_TOOLS = java -jar generated/avro-tools.jar idl
 generated/avro-tools.jar:
 	curl http://www.apache.si/avro/avro-1.8.1/java/avro-tools-1.8.1.jar -o $@
 
-generated/%.avpr : avdl/%.avdl generated/avro-tools.jar 
-	$(AVRO_TOOLS) $< > $@
+generated/%.avpr : avdl/%.avdl generated/avro-tools.jar
+	@echo "Generating " $@
+	@$(AVRO_TOOLS) $< > $@
 
 .PHONY: docs
 docs: generated/etl.avpr generated/platform.avpr
