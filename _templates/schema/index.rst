@@ -6,5 +6,5 @@ Tables
     :titlesonly:
 
 {% for protocol in  protocols %}
-    {{protocol.name}}
+    {{protocol}}
 {% endfor %}

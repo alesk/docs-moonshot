@@ -7,5 +7,4 @@ Big Query Tables
    roles
    users
 
-   generated/tables/companies
-   generated/tables/roles
+   All Tables <generated/index>

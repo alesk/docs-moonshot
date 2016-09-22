@@ -28,11 +28,10 @@ env.filters['slug'] = slug
 
 AVRO_PRIMITIVE_TYPES = {'null', 'int', 'long', 'float',
                         'double', 'bytes', 'string', 'boolean'}
-TEMPLATE_INDEX = env.get_template('index.rst')
-TEMPLATE_PROTOCOL = env.get_template('protocol.rst')
 TEMPLATE_TABLE = env.get_template('table.rst')
-TEMPLATE_AVRO_FILE = env.get_template('avro-file.rst')
 TEMPLATE_ENUM = env.get_template('enum.rst')
+TEMPLATE_PROTOCOL = env.get_template('protocol.rst')
+TEMPLATE_INDEX = env.get_template('index.rst')
 
 
 def is_avro_primitive(typ_name):
@@ -180,15 +179,36 @@ def build_docs(protocol_map):
     # tables and enums
     types = list(get_types(protocol_map))
 
+    tables = list(filter(lambda x: x.get('bq_table'), types))
+    enums = list(filter(lambda x: x.get('type') == 'enum', types))
+
     # tables
-    for dct in filter(lambda x: x.get('bq_table'), types):
-        file_name = os.path.join('tables', '{bq_table}.rst'.format(**dct))
+    for dct in tables:
+        file_name = os.path.join('tables', '{namespace}.{name}.rst'.format(**dct))
         yield file_name, TEMPLATE_TABLE.render(dct)
 
     # enums
-    for dct in filter(lambda x: x.get('type') == 'enum', types):
+    for dct in enums:
         file_name = os.path.join('enums', '{namespace}.{name}.rst'.format(**dct))
         yield file_name, TEMPLATE_ENUM.render(dct)
+
+    # protocol file
+    for protocol in protocol_map.values():
+        namespace = protocol['namespace']
+        file_name = os.path.join('{protocol}.rst'.format(**protocol))
+        tables_ = dict([
+            (t['bq_table'], t['qualified_name']) for t in tables if t['namespace'] == namespace])
+
+        yield file_name, TEMPLATE_PROTOCOL.render(
+            name=protocol['protocol'],
+            namespace=namespace,
+            doc=protocol['doc'],
+            tables=tables_)
+
+
+    # protocol index
+    yield 'index.rst', TEMPLATE_INDEX.render(protocols= [ p['protocol'] for p in protocol_map.values()])
+
 
 def _merge_dicts(*args):
     '''
