@@ -18,9 +18,12 @@ protocol platform {
     int id;
     union {null, RoleType} role_type;
 
-    /** Some more documentation
+    /**
+    Some more documentation
 
-    leave one line to prevent tirggering definition blockl.
+    leave one line to prevent tirggering definition block.
+
+    leave one line to prevent tirggering definition block2.
     */
     union {null, int} number_of_logins;
   }

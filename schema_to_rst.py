@@ -36,7 +36,13 @@ TEMPLATE_ENUM = env.get_template('enum.rst')
 
 
 def is_avro_primitive(typ_name):
-    return not (typ_name in AVRO_PRIMITIVE_TYPES)
+    return typ_name in AVRO_PRIMITIVE_TYPES
+
+def is_linkable(typ_name):
+    datetime_type = typ_name.endswith('Timestamp') or typ_name.endswith('Date')
+    avro_primitive = is_avro_primitive(typ_name)
+    return not (datetime_type or avro_primitive)
+
 
 
 def dictify_type(typ):
@@ -44,16 +50,19 @@ def dictify_type(typ):
         return {'type': 'null',
                 'nullable': True,
                 'origin': None,
+                'is_linkable': False,
                 'is_acro_primitive': True
                 }
     if isinstance(typ, str):
         return {'type': typ,
                 'nullable': False,
                 'origin': None,
+                'is_linkable': is_linkable(typ),
                 'is_avro_primitive': is_avro_primitive(typ)}
     elif isinstance(typ, dict):
         return dict(**typ,
             nullable=False,
+            is_linkable=is_linkable(typ['type']),
             is_avro_primitive=is_avro_primitive(typ['type']))
     elif isinstance(typ, list) and 'null' in typ:
         dict_typ = map(dictify_type, typ)
@@ -96,7 +105,7 @@ def find_type(protocol_map, type_name):
 def find_field(protocols_map, name):
     namespace, type_name, field_name = unlink(name)
     typ = find_type(protocols_map, "{0}.{1}".format(namespace, type_name))
-    for field in typ['fields']:
+    for field in typ.get('fields', []):
         if field['name'] == field_name:
             return field
 
@@ -110,15 +119,17 @@ def find_field_usages(protocols_map, origin):
                     yield '{0}.{1}#{2}'.format(
                         protocol['namespace'], typ['name'], field['name'])
 
-
-def get_tables(protocols_map):
+def get_types(protocols_map):
     def build_field(namespace, type_name, field):
         name = field['name']
         id = '{0}.{1}#{2}'.format(namespace, type_name, field.get('name'))
         dict_type = dictify_type(field.get('type'))
+        type_name = dict_type['type']
+        qualified_type_name = type_name if '.' in type_name else '{0}.{1}'.format(namespace, type_name)
         origin = dict_type.get('origin')
         doc = field.get('doc')
 
+        # link to origin
         if origin is not None:
             origin_field = find_field(protocols_map, origin)
             origin_doc = origin_field.get('doc')
@@ -132,33 +143,64 @@ def get_tables(protocols_map):
                 'usages': list(find_field_usages(protocols_map, id)),
                 'type': dict_type,
                 'doc': doc,
+                'is_linkable': dict_type['is_linkable'],
+                'qualified_type_name': qualified_type_name,
                 'origin_doc': origin_doc}
 
     # for each table
     for protocol_namespace, protocol in protocols_map.items():
         for record in protocol.get('types'):
+            name = record['name']
             bq_table = record.get('bq-table')
-            if not bq_table:
-                continue
-            yield {
-                'namespace': protocol_namespace,
-                'bq_table': bq_table,
-                'doc': record.get('doc'),
-                'fields': [
-                    build_field(
-                        record.get('namespace', protocol_namespace),
-                        record.get('name'),
-                        f)
-                    for f in record.get('fields')]
-            }
+            namespace = record.get('namespace', protocol_namespace)
+            qualified_name = '{0}.{1}'.format(namespace, name)
+
+            if bq_table:
+                custom = {
+                    'namespace': namespace,
+                    'bq_table': bq_table,
+                    'qualified_name': qualified_name,
+                    'fields': [
+                        build_field(
+                            record.get('namespace', protocol_namespace),
+                            record.get('name'),
+                            f)
+                        for f in record.get('fields')]}
+                yield _merge_dicts(record, custom)
+
+            elif record['type'] == 'enum':
+                custom = {
+                    'namespace': namespace,
+                    'qualified_name': qualified_name}
+                yield _merge_dicts(record, custom)
 
 
 def build_docs(protocol_map):
 
-    for dct in get_tables(protocol_map):
-        file_name = os.path.join('tables', '{0}.rst'.format(dct['bq_table']))
+    # tables and enums
+    types = list(get_types(protocol_map))
+
+    # tables
+    for dct in filter(lambda x: x.get('bq_table'), types):
+        file_name = os.path.join('tables', '{bq_table}.rst'.format(**dct))
         yield file_name, TEMPLATE_TABLE.render(dct)
 
+    # enums
+    for dct in filter(lambda x: x.get('type') == 'enum', types):
+        file_name = os.path.join('enums', '{namespace}.{name}.rst'.format(**dct))
+        yield file_name, TEMPLATE_ENUM.render(dct)
+
+def _merge_dicts(*args):
+    '''
+    >>> _merge_dicts({})
+    {}
+    >>> pprint(_merge_dicts({'a': 1, 'b': 2}, {'a': 2, 'c': 1}))
+    {'a': 2, 'b': 2, 'c': 1}
+    '''
+    ret = {}
+    for d in args:
+        ret.update(d)
+    return ret
 
 def _create_file_path(file):
     path = os.path.dirname(file)

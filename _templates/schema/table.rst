@@ -1,7 +1,7 @@
 .. _{{bq_table | slug}}:
 
 {{bq_table}}
-=========
+=================
 
 {% if doc is not none %}
 {{doc}}
@@ -12,10 +12,18 @@ Documentation missing.
 Fields
 ------
 
+{% macro type_link(field) %}
+{% if field.is_linkable %}:ref:`{{field.qualified_type_name}} <{{field.qualified_type_name | slug}}>`{% else %}{{field.type.type}}{% endif %}
+{% endmacro %}
+
+{% macro required(field) %}
+{% if not field.type.nullable %}*required*{% else %}*can contain NULL*{% endif %}
+{% endmacro %}
+
 {% for field in fields %}
 .. _{{field.id | slug}}:
 
-- **{{field.name}}**, {{field.type.type}}{% if not field.type.nullable %}, *required*{% endif %}
+- **{{field.name}}**: {{ type_link(field) }}, {{ required(field) }}
 
 {% if field.origin_doc is not none %}
 
