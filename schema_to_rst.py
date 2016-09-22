@@ -63,7 +63,7 @@ def dictify_type(typ):
     else:
         raise RuntimeError("Unsupported type: {0}".format(typ))
 
-
+# Regex for 'some.name.space.Type#field'
 LINK = re.compile(
     '(?P<namespace>[a-z_\.]+)*\.(?P<type>[a-z0-9_]+)(#(?P<field>[a-z0-9_]+))*',
     re.IGNORECASE)
@@ -73,6 +73,10 @@ def unlink(link):
     '''
     >>> unlink('com.toptal.platform.Role#user_id')
     ('com.toptal.platform', 'Role', 'user_id')
+    >>> unlink('com.toptal.platform.Role')
+    ('com.toptal.platform', 'Role', None)
+    >>> unlink('platform.Role')
+    ('platform', 'Role', None)
     '''
     m = LINK.match(link)
     if m:
@@ -111,23 +115,24 @@ def get_tables(protocols_map):
     def build_field(namespace, type_name, field):
         name = field['name']
         id = '{0}.{1}#{2}'.format(namespace, type_name, field.get('name'))
-        origin = field.get('origin')
+        dict_type = dictify_type(field.get('type'))
+        origin = dict_type.get('origin')
         doc = field.get('doc')
 
-        if doc is None and origin is not None:
+        if origin is not None:
             origin_field = find_field(protocols_map, origin)
-            doc = origin_field.get('doc')
+            origin_doc = origin_field.get('doc')
+        else:
+            origin_doc = None
 
-
-        ret = {
+        return {
                 'id': id,
                 'name': name,
                 'origin': origin,
                 'usages': list(find_field_usages(protocols_map, id)),
-                'type': dictify_type(field.get('type')),
-                'doc': doc}
-
-        return ret
+                'type': dict_type,
+                'doc': doc,
+                'origin_doc': origin_doc}
 
     # for each table
     for protocol_namespace, protocol in protocols_map.items():

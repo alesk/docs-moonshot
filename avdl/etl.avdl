@@ -10,6 +10,7 @@ protocol etl {
   @bq-table("companies")
   record Company {
     @origin("com.toptal.platform.Role#id")
+    /** A subset of role id consisting of companies only */
     int company_id;
 
     union {null, @origin("com.toptal.platform.Role#id") int} claimer_id;

@@ -3,9 +3,11 @@
 {{bq_table}}
 =========
 
-
-
+{% if doc is not none %}
 {{doc}}
+{% else %}
+Documentation missing.
+{% endif %}
 
 Fields
 ------
@@ -13,7 +15,12 @@ Fields
 {% for field in fields %}
 .. _{{field.id | slug}}:
 
-- **{{field.name}}**, {{field.type.type}}
+- **{{field.name}}**, {{field.type.type}}{% if not field.type.nullable %}, *required*{% endif %}
+
+{% if field.origin_doc is not none %}
+
+  {{field.origin_doc}}
+{% endif %}
 {% if field.doc is not none %}
 
   {{field.doc}}
