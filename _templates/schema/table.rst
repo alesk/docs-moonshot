@@ -1,6 +1,6 @@
-.. _{{bq_table | slug}}:
+.. _{{qualified_name | slug}}:
 
-{{bq_table}}
+{{title}}
 =================
 
 {% if doc is not none %}
@@ -13,17 +13,21 @@ Fields
 ------
 
 {% macro type_link(field) %}
-{% if field.is_linkable %}:ref:`{{field.qualified_type_name}} <{{field.qualified_type_name | slug}}>`{% else %}{{field.type.type}}{% endif %}
+{% if field.type.is_linkable %}:ref:`{{field.qualified_type_name}} <{{field.qualified_type_name | slug}}>`{% else %}{{field.type.type}}{% endif %}
 {% endmacro %}
 
 {% macro required(field) %}
 {% if not field.type.nullable %}*required*{% else %}*can contain NULL*{% endif %}
 {% endmacro %}
 
+{% macro type_signature(field) %}
+{% if field.type.container == 'array' %}[{{ type_link(field) }}]{% else %}{{ type_link(field) }}{% endif %}
+{% endmacro %}
+
 {% for field in fields %}
 .. _{{field.id | slug}}:
 
-- **{{field.name}}**: {{ type_link(field) }}, {{ required(field) }}
+- **{{field.name}}**: {{ type_signature(field) }}, {{ required(field) }}
 
 {% if field.origin_doc is not none %}
 

@@ -5,6 +5,15 @@
 */
 protocol platform {
 
+ record Timestamp {
+    long unix;
+  }
+
+  record Date {
+    long unix;
+  }
+
+
   enum RoleType {
     developer,
     designer,
@@ -28,5 +37,21 @@ protocol platform {
     union {null, int} number_of_logins;
   }
 
+ record ExtraHours {
+    double hours;
+    Date start_date;
+    Date end_date;
+  }
+
+   @bq-table("timesheets")
+    record Timesheet {
+      int id;
+      int billable_work_id;
+      union {null, string} comment;
+      Timestamp created_at;
+      Timestamp updated_at;
+      boolean submitted;
+      union {null, array<ExtraHours>} extra_hours;
+    }
 
 }

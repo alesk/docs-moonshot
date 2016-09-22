@@ -59,10 +59,26 @@ def dictify_type(typ):
                 'is_linkable': is_linkable(typ),
                 'is_avro_primitive': is_avro_primitive(typ)}
     elif isinstance(typ, dict):
-        return dict(**typ,
-            nullable=False,
-            is_linkable=is_linkable(typ['type']),
-            is_avro_primitive=is_avro_primitive(typ['type']))
+        if typ['type'] == 'array':
+            item_type = typ['items']
+            custom = {
+                'container': 'array',
+                'origin': typ.get('origin'),
+                'type': item_type,
+                'nullable': False,
+                'is_linkable': is_linkable(item_type),
+                'is_avro_primitive': is_avro_primitive(item_type)
+            }
+            return _merge_dicts(typ, custom)
+        else:
+            custom = {
+                'nullable': False,
+                'origin': typ.get('origin'),
+                'is_linkable': is_linkable(typ['type']),
+                'is_avro_primitive': is_avro_primitive(typ['type'])
+            }
+            return _merge_dicts(typ, custom)
+
     elif isinstance(typ, list) and 'null' in typ:
         dict_typ = map(dictify_type, typ)
         return {
@@ -154,10 +170,11 @@ def get_types(protocols_map):
             namespace = record.get('namespace', protocol_namespace)
             qualified_name = '{0}.{1}'.format(namespace, name)
 
-            if bq_table:
+            if record['type'] == 'record':
                 custom = {
                     'namespace': namespace,
                     'bq_table': bq_table,
+                    'title': bq_table or qualified_name,
                     'qualified_name': qualified_name,
                     'fields': [
                         build_field(
@@ -179,11 +196,13 @@ def build_docs(protocol_map):
     # tables and enums
     types = list(get_types(protocol_map))
 
-    tables = list(filter(lambda x: x.get('bq_table'), types))
+
+    records = list(filter(lambda x: x.get('type')  == 'record' is not None, types))
+    tables = list(filter(lambda x: x.get('bq_table') is not None, types))
     enums = list(filter(lambda x: x.get('type') == 'enum', types))
 
-    # tables
-    for dct in tables:
+    # records
+    for dct in records:
         file_name = os.path.join('tables', '{namespace}.{name}.rst'.format(**dct))
         yield file_name, TEMPLATE_TABLE.render(dct)
 
