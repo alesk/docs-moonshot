@@ -43,47 +43,63 @@ def is_linkable(typ_name):
 
 
 def dictify_type(typ):
+    """
+    >>> pprint(dictify_type('null'))
+    {'is_array': False, 'is_avro_primitive': True, 'nullable': True, 'type': 'null'}
+
+    >>> pprint(dictify_type('int'))
+    {'is_array': False, 'is_avro_primitive': True, 'nullable': False, 'type': 'int'}
+
+    >>> pprint(dictify_type(['int', 'null']))
+    {'is_array': False, 'is_avro_primitive': True, 'nullable': True, 'type': 'int'}
+
+    >>> pprint(dictify_type({'type': 'com.toptal.etl.Role'}), width=200)
+    {'is_array': False, 'is_avro_primitive': False, 'nullable': False, 'type': 'com.toptal.etl.Role'}
+
+    >>> pprint(dictify_type(['null', {'type': 'com.toptal.etl.Role'}]), width=200)
+    {'is_array': False, 'is_avro_primitive': False, 'nullable': True, 'type': 'com.toptal.etl.Role'}
+
+    >>> pprint(dictify_type({'type': 'array', 'items': 'com.toptal.etl.Role'}), width=200)
+    {'is_array': True, 'is_avro_primitive': False, 'nullable': False, 'type': 'com.toptal.etl.Role'}
+    """
     if typ == 'null':
-        return {'type': 'null',
+        return {
+                'is_array': False,
+                'type': 'null',
                 'nullable': True,
-                'origin': None,
-                'is_linkable': False,
                 'is_avro_primitive': True
                 }
     elif isinstance(typ, str):
-        return {'type': typ,
+        return {
+                'is_array': False,
+                'type': typ,
                 'nullable': False,
-                'origin': None,
-                'is_linkable': is_linkable(typ),
                 'is_avro_primitive': is_avro_primitive(typ)}
     elif isinstance(typ, dict):
-        if typ['type'] == 'array':
+        base_type = typ['type']
+        if base_type == 'array':
             item_type = typ['items']
-            custom = {
-                'container': 'array',
-                'origin': typ.get('origin'),
+            return {
+                'is_array': True,
                 'type': item_type,
                 'nullable': False,
-                'is_linkable': is_linkable(item_type),
                 'is_avro_primitive': is_avro_primitive(item_type)
             }
-            return merge_dicts(typ, custom)
         else:
-            custom = {
+            return {
+                'is_array': False,
+                'type': base_type,
                 'nullable': False,
-                'origin': typ.get('origin'),
-                'is_linkable': is_linkable(typ['type']),
                 'is_avro_primitive': is_avro_primitive(typ['type'])
             }
-            return merge_dicts(typ, custom)
 
     elif isinstance(typ, list) and 'null' in typ:
         dict_typ = map(dictify_type, typ)
         return {
             **list(filter(lambda x: x['type'] != 'null', dict_typ))[0],
-            **{'nullable': True}}
+            **{'nullable': True, 'is_array': False}}
     else:
-        raise RuntimeError('Unsupported type: {0}'.format(typ))
+        raise RuntimeError('Unsupported type: {0}'.format(str(typ)))
 
 
 # Regex for 'some.name.space.Type#field'
@@ -187,13 +203,13 @@ def get_types(protocols_map):
                     'qualified_name': qualified_name,
                     'fields': sorted(fields, key=lambda x: x['name'])}
 
-                yield merge_dicts(record, custom)
+                yield merge_dicst(record, custom)
 
             elif record['type'] == 'enum':
                 custom = {
                     'namespace': namespace,
                     'qualified_name': qualified_name}
-                yield merge_dicts(record, custom)
+                yield merge_dicst(record, custom)
 
 
 def build_docs(protocol_map):
