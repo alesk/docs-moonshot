@@ -5,6 +5,31 @@ of markdown markup language as an addition to restructured text.
 
 ![moon shot](http://www.theallium.com/wp-content/uploads/2016/02/Moonshot.jpg)
 
+## Install
+
+On windows, do:
+
+```
+python -m venv .enw
+.enw\Scripts\activate.bat
+pip install -r requirements.txt
+```
+
+on linux/MacOs
+
+```
+python -m venv .env
+source .env/bin/activate
+pip install -r requirements.txt
+```
+
+## Run
+
+Make sure to activate virtualenv.
+
+Use `make` to build documentation.
+Use `python -m http.server` in `_build/html` to serve documentation.
+
 ## Motivation
 
 It's hard to do too many things at a time, so this repository is

@@ -1,18 +1,16 @@
 #!/usr/bin/env python3.5
 
-import argparse
-import glob
-import json
 import os
 import os.path
 import re
 from pprint import pprint
+from teftel_docs.utils import merge_dicts, create_file_path
 
 from jinja2 import Environment, FileSystemLoader
 
 env = Environment(
     loader=FileSystemLoader(
-        os.path.join(os.path.dirname(__file__), '_templates', 'schema')),
+        os.path.join(os.path.dirname(__file__), 'templates')),
     trim_blocks=True, lstrip_blocks=True)
 
 
@@ -23,8 +21,8 @@ def slug(text):
     """
     return re.sub('[^a-z0-9_]+', '-', text.strip().lower())
 
-env.filters['slug'] = slug
 
+env.filters['slug'] = slug
 
 AVRO_PRIMITIVE_TYPES = {'null', 'int', 'long', 'float',
                         'double', 'bytes', 'string', 'boolean'}
@@ -37,11 +35,11 @@ TEMPLATE_INDEX = env.get_template('index.rst')
 def is_avro_primitive(typ_name):
     return typ_name in AVRO_PRIMITIVE_TYPES
 
+
 def is_linkable(typ_name):
     datetime_type = typ_name.endswith('Timestamp') or typ_name.endswith('Date')
     avro_primitive = is_avro_primitive(typ_name)
     return not (datetime_type or avro_primitive)
-
 
 
 def dictify_type(typ):
@@ -50,9 +48,9 @@ def dictify_type(typ):
                 'nullable': True,
                 'origin': None,
                 'is_linkable': False,
-                'is_acro_primitive': True
+                'is_avro_primitive': True
                 }
-    if isinstance(typ, str):
+    elif isinstance(typ, str):
         return {'type': typ,
                 'nullable': False,
                 'origin': None,
@@ -69,7 +67,7 @@ def dictify_type(typ):
                 'is_linkable': is_linkable(item_type),
                 'is_avro_primitive': is_avro_primitive(item_type)
             }
-            return _merge_dicts(typ, custom)
+            return merge_dicts(typ, custom)
         else:
             custom = {
                 'nullable': False,
@@ -77,15 +75,16 @@ def dictify_type(typ):
                 'is_linkable': is_linkable(typ['type']),
                 'is_avro_primitive': is_avro_primitive(typ['type'])
             }
-            return _merge_dicts(typ, custom)
+            return merge_dicts(typ, custom)
 
     elif isinstance(typ, list) and 'null' in typ:
         dict_typ = map(dictify_type, typ)
         return {
-            **list(filter( lambda x: x['type'] != 'null', dict_typ))[0],
+            **list(filter(lambda x: x['type'] != 'null', dict_typ))[0],
             **{'nullable': True}}
     else:
-        raise RuntimeError("Unsupported type: {0}".format(typ))
+        raise RuntimeError('Unsupported type: {0}'.format(typ))
+
 
 # Regex for 'some.name.space.Type#field'
 LINK = re.compile(
@@ -94,14 +93,14 @@ LINK = re.compile(
 
 
 def unlink(link):
-    '''
+    """
     >>> unlink('com.toptal.platform.Role#user_id')
     ('com.toptal.platform', 'Role', 'user_id')
     >>> unlink('com.toptal.platform.Role')
     ('com.toptal.platform', 'Role', None)
     >>> unlink('platform.Role')
     ('platform', 'Role', None)
-    '''
+    """
     m = LINK.match(link)
     if m:
         parts = m.groupdict()
@@ -119,7 +118,7 @@ def find_type(protocol_map, type_name):
 
 def find_field(protocols_map, name):
     namespace, type_name, field_name = unlink(name)
-    typ = find_type(protocols_map, "{0}.{1}".format(namespace, type_name))
+    typ = find_type(protocols_map, '{0}.{1}'.format(namespace, type_name))
     for field in typ.get('fields', []):
         if field['name'] == field_name:
             return field
@@ -134,10 +133,11 @@ def find_field_usages(protocols_map, origin):
                     yield '{0}.{1}#{2}'.format(
                         protocol['namespace'], typ['name'], field['name'])
 
+
 def get_types(protocols_map):
     def build_field(namespace, type_name, field):
         name = field['name']
-        id = '{0}.{1}#{2}'.format(namespace, type_name, field.get('name'))
+        field_id = '{0}.{1}#{2}'.format(namespace, type_name, field.get('name'))
         dict_type = dictify_type(field.get('type'))
         type_name = dict_type['type']
         qualified_type_name = type_name if '.' in type_name else '{0}.{1}'.format(namespace, type_name)
@@ -147,20 +147,22 @@ def get_types(protocols_map):
         # link to origin
         if origin is not None:
             origin_field = find_field(protocols_map, origin)
+            if origin_field is None:
+                raise ValueError('Invalid origin reference in: {0}'.format(origin))
             origin_doc = origin_field.get('doc')
         else:
             origin_doc = None
 
         return {
-                'id': id,
-                'name': name,
-                'origin': origin,
-                'usages': list(find_field_usages(protocols_map, id)),
-                'type': dict_type,
-                'doc': doc,
-                'is_linkable': dict_type['is_linkable'],
-                'qualified_type_name': qualified_type_name,
-                'origin_doc': origin_doc}
+            'id': field_id,
+            'name': name,
+            'origin': origin,
+            'usages': list(find_field_usages(protocols_map, id)),
+            'type': dict_type,
+            'doc': doc,
+            'is_linkable': dict_type['is_linkable'],
+            'qualified_type_name': qualified_type_name,
+            'origin_doc': origin_doc}
 
     # for each table
     for protocol_namespace, protocol in protocols_map.items():
@@ -171,43 +173,44 @@ def get_types(protocols_map):
             qualified_name = '{0}.{1}'.format(namespace, name)
 
             if record['type'] == 'record':
+                fields = (
+                    build_field(
+                        record.get('namespace', protocol_namespace),
+                        record.get('name'),
+                        f)
+                    for f in record.get('fields'))
+
                 custom = {
                     'namespace': namespace,
                     'bq_table': bq_table,
                     'title': bq_table or qualified_name,
                     'qualified_name': qualified_name,
-                    'fields': [
-                        build_field(
-                            record.get('namespace', protocol_namespace),
-                            record.get('name'),
-                            f)
-                        for f in record.get('fields')]}
-                yield _merge_dicts(record, custom)
+                    'fields': sorted(fields, key=lambda x: x['name'])}
+
+                yield merge_dicts(record, custom)
 
             elif record['type'] == 'enum':
                 custom = {
                     'namespace': namespace,
                     'qualified_name': qualified_name}
-                yield _merge_dicts(record, custom)
+                yield merge_dicts(record, custom)
 
 
 def build_docs(protocol_map):
-
     # tables and enums
     types = list(get_types(protocol_map))
 
-
-    records = list(filter(lambda x: x.get('type')  == 'record' is not None, types))
-    tables = list(filter(lambda x: x.get('bq_table') is not None, types))
-    enums = list(filter(lambda x: x.get('type') == 'enum', types))
+    def is_record(x): return x.get('type') == 'record'
+    def has_table(x): return x.get('bq_table') is not None
+    def is_enum(x): return x.get('type') == 'enum'
 
     # records
-    for dct in records:
-        file_name = os.path.join('tables', '{namespace}.{name}.rst'.format(**dct))
+    for dct in filter(is_record, types):
+        file_name = os.path.join('records', '{namespace}.{name}.rst'.format(**dct))
         yield file_name, TEMPLATE_TABLE.render(dct)
 
     # enums
-    for dct in enums:
+    for dct in filter(is_enum, types):
         file_name = os.path.join('enums', '{namespace}.{name}.rst'.format(**dct))
         yield file_name, TEMPLATE_ENUM.render(dct)
 
@@ -215,61 +218,18 @@ def build_docs(protocol_map):
     for protocol in protocol_map.values():
         namespace = protocol['namespace']
         file_name = os.path.join('{protocol}.rst'.format(**protocol))
-        tables_ = dict([
-            (t['bq_table'], t['qualified_name']) for t in tables if t['namespace'] == namespace])
+
+        # use set to get rid of duplicates
+        tables = set([(t['bq_table'], t['qualified_name'])
+                      for t in filter(has_table, types) if t['namespace'] == namespace])
 
         yield file_name, TEMPLATE_PROTOCOL.render(
             name=protocol['protocol'],
             namespace=namespace,
-            doc=protocol['doc'],
-            tables=tables_)
-
+            doc=protocol.get('doc'),
+            tables=sorted(list(tables), key=lambda x: x[0]))
 
     # protocol index
-    yield 'index.rst', TEMPLATE_INDEX.render(protocols= [ p['protocol'] for p in protocol_map.values()])
+    yield 'index.rst', TEMPLATE_INDEX.render(protocols=[p['protocol'] for p in protocol_map.values()])
 
 
-def _merge_dicts(*args):
-    '''
-    >>> _merge_dicts({})
-    {}
-    >>> pprint(_merge_dicts({'a': 1, 'b': 2}, {'a': 2, 'c': 1}))
-    {'a': 2, 'b': 2, 'c': 1}
-    '''
-    ret = {}
-    for d in args:
-        ret.update(d)
-    return ret
-
-def _create_file_path(file):
-    path = os.path.dirname(file)
-    if not os.path.exists(path):
-        os.makedirs(path)
-
-
-def parse_arguments():
-    parser = argparse.ArgumentParser(
-        description='Generates schema docs from avro protocol files')
-    parser.add_argument('--protocol-path', required=True,
-                        help='Path to folder containing AVPR files')
-    parser.add_argument('--output-path', required=True,
-                        help='Output path')
-
-    return parser.parse_args()
-
-
-def main():
-    args = parse_arguments()
-    protocol_files = glob.glob(os.path.join(args.protocol_path, '*.avpr'))
-    protocols = [json.load(open(filename, 'r')) for filename in protocol_files]
-
-    protocols_map = {p['namespace']: p for p in protocols}
-    for file_name, content in build_docs(protocols_map):
-        file_path = os.path.join(args.output_path, file_name)
-        _create_file_path(file_path)
-        with open(file_path, 'w') as fw:
-            fw.write(content)
-
-
-if __name__ == '__main__':
-    main()

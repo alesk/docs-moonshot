@@ -14,8 +14,8 @@ generated/%.avpr : avdl/%.avdl generated/avro-tools.jar
 
 .PHONY: docs
 docs: generated/etl.avpr generated/platform.avpr
-	@python schema_to_rst.py --protocol-path generated --output-path schema/generated
-	@sphinx-build -b html -d _build/doctrees . _build/html -j $(NPROCS)
+	@python teftel-docs/bin/schema-to-rst.py --protocol-path generated --output-path schema/generated
+	@sphinx-build -b html -d _build/doctrees demo _build/html -j $(NPROCS)
 
 .PHONY: clean
 clean:

@@ -9,6 +9,6 @@
   :maxdepth: 1
   :titlesonly:
 
-{% for table, link in tables.items() %}
+{% for table, link in tables %}
   {{table}} <tables/{{link}}>
 {% endfor %}
