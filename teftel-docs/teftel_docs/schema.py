@@ -133,6 +133,64 @@ def dictify_type(typ):
         raise RuntimeError('Unsupported type: {0}'.format(str(typ)))
 
 
+def extract_origin(field_map, field):
+    """
+    returns list of field origins
+
+    >>> extract_origin({'A': {}}, 'A')
+    []
+
+    >>> extract_origin({'A': {}}, 'B')
+    Traceback (most recent call last):
+      ...
+    ValueError: Nonexistent field B
+
+    >>> extract_origin({'A': {'origin': 'C'}}, 'A')
+    Traceback (most recent call last):
+      ...
+    ValueError: Invalid origin reference 'C'
+
+    >>> extract_origin({'A': {'origin': 'A'}}, 'A') # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    ValueError: Cyclic reference for field A and origin ['A', ...
+
+    >>> extract_origin({'A': {}, 'B': {}}, 'A')
+    []
+
+    >>> extract_origin({'A': {'origin': 'B'}, 'B': {}}, 'A')
+    ['B']
+
+    >>> extract_origin({'A': {'origin': 'B'}, 'B': {'origin': 'C'}, 'C':{}}, 'A')
+    ['B', 'C']
+
+    >>> extract_origin({'A': {'origin': 'B'}, 'B': {'origin': 'C'}, 'C':{'origin': 'A'}}, 'A') # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+      ...
+    ValueError: Cyclic reference for field A and origin ['B', 'C', 'A', ...
+
+    """
+    MAX_LEVEL = 10
+    field_dict = field_map.get(field)
+
+    if field_dict is None:
+        raise ValueError('Nonexistent field {0}'.format(field))
+
+    def fn(f, trace):
+        origin_key = f.get('origin')
+        if origin_key is None:
+            return []
+
+        origin_field = field_map.get(origin_key)
+        if origin_field is None:
+            raise ValueError('Invalid origin reference \'{0}\''.format(origin_key))
+
+        if len(trace) > MAX_LEVEL:
+            raise ValueError('Cyclic reference for field {0} and origin {1}.'.format(field, trace))
+
+        return [origin_key] + fn(origin_field, trace + [origin_key])
+
+    return fn(field_dict, [])
 # Regex for 'some.name.space.Type#field'
 LINK = re.compile(
     '(?P<namespace>[a-z_\.]+)*\.(?P<type>[a-z0-9_]+)(#(?P<field>[a-z0-9_]+))*',
