@@ -199,6 +199,8 @@ LINK = re.compile(
 
 def unlink(link):
     """
+    Splits link of the form namespace.Type#field to it's parts.
+
     >>> unlink('com.toptal.platform.Role#user_id')
     ('com.toptal.platform', 'Role', 'user_id')
     >>> unlink('com.toptal.platform.Role')
