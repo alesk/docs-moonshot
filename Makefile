@@ -3,6 +3,7 @@ NPROCS := $(shell python -c "import multiprocessing; print(multiprocessing.cpu_c
 
 AVRO_TOOLS = java -jar generated/avro-tools.jar idl
 
+
 .DEFAULT_GOAL := docs
 
 generated/avro-tools.jar:
@@ -14,9 +15,18 @@ generated/%.avpr : avdl/%.avdl generated/avro-tools.jar
 
 .PHONY: docs
 docs: generated/etl.avpr generated/platform.avpr
-	@python teftel-docs/bin/schema-to-rst.py --protocol-path generated --output-path schema/generated
+	@python teftel-docs/bin/schema-to-rst.py --protocol-path generated --output-path demo/schema/generated
 	@sphinx-build -b html -d _build/doctrees demo _build/html -j $(NPROCS)
+
+.PHONY: teftel-docs
+teftel-docs:
+	@python teftel-docs/bin/schema-to-rst.py --protocol-path ../../toptal/teftel/generated --output-path ../../toptal/teftel/teftel-docs/teftel_docs/schema/generated
+	@sphinx-build -b html -d _build/doctrees ../../toptal/teftel/teftel-docs/teftel_docs _build/html -j $(NPROCS)
+
+.PHONY: lint
+lint: ## lints Python code in accordance to PEP-8
+	@flake8 .
 
 .PHONY: clean
 clean:
-	@rm -rf generated/*.avpr schema/generated _build/html/* _build/doctrees/*
+	@rm -rf generated/*.avpr demo/schema/generated _build/html/* _build/doctrees/*
