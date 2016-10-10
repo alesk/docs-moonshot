@@ -1,10 +1,12 @@
 import os
+from pprint import pprint
+
 
 def merge_dicts(*args):
     """
-    >>> _merge_dicts({})
+    >>> merge_dicts({})
     {}
-    >>> pprint(_merge_dicts({'a': 1, 'b': 2}, {'a': 2, 'c': 1}))
+    >>> pprint(merge_dicts({'a': 1, 'b': 2}, {'a': 2, 'c': 1}))
     {'a': 2, 'b': 2, 'c': 1}
     """
     ret = {}

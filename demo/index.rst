@@ -12,12 +12,9 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   README 
-
    BigQuery Tables <schema/index>
 
    clients
-   config
    glossary
 
 Indices and tables

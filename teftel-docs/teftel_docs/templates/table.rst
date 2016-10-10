@@ -13,7 +13,7 @@ Fields
 ------
 
 {% macro type_link(field) %}
-{% if field.type.is_linkable %}:ref:`{{field.qualified_type_name}} <{{field.qualified_type_name | slug}}>`{% else %}{{field.type.type}}{% endif %}
+{% if field.is_linkable %}:ref:`{{field.type}} <{{field.type | slug}}>`{% else %}{{field.type}}{% endif %}
 {% endmacro %}
 
 {% macro required(field) %}
@@ -29,25 +29,16 @@ Fields
 
 - **{{field.name}}**: {{ type_signature(field) }}, {{ required(field) }}
 
-{% if field.origin_doc is not none %}
-
-  {{field.origin_doc}}
-{% endif %}
 {% if field.doc is not none %}
 
   {{field.doc}}
 {% endif %}
-{% if field.type.origin is not none %}
 
-  origin: :ref:`{{field.type.origin}} <{{field.type.origin | slug }}>`
+{% for link, origin_field in field.origin_fields.items() %}
+{% if origin_field['doc'] is defined %}
+  {{origin_field['doc']}} (:ref:`{{link}} <{{link | slug}}>`)
 {% endif %}
-{% if field.usages|length > 0 %}
+{% endfor %}
 
-  usages:
-  {% for usage in field.usages %}
-   - :ref:`{{usage}} <{{usage | slug }}>`
-  {% endfor %}
-
-{% endif %}
 
 {% endfor %}
