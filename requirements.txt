@@ -1,2 +1,4 @@
+jinja2
 ipython
+flake8
 -e teftel-docs
