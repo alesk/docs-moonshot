@@ -23,7 +23,6 @@ protocol platform {
   @bq-table("roles")
   record Role {
     /** unique id of a role */
-    @origin("com.toptal.platform.Role#role_type")
     int id;
     union {null, RoleType} role_type;
 
