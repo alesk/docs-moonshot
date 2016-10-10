@@ -5,7 +5,7 @@ import glob
 import json
 import os
 
-from teftel_docs.schema import build_docs
+from teftel_docs.avrodoc import build_docs
 from teftel_docs.utils import create_file_path
 
 

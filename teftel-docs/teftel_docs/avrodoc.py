@@ -264,13 +264,15 @@ def simplify_protocol(protocol):
     def sort_by_qualified_name(it):
         return sorted(it, key=lambda x: x['qualified_name'])
 
+    local_types = [t for t in protocol['types'] if not t.get('namespace')]
+
     enums = sort_by_qualified_name(
         {
             'qualified_name': qualified_name(t),
             'doc': t.get('doc', NO_DOC_STRING),
             'symbols': sorted(t['symbols'])
         }
-        for t in protocol['types'] if t['type'] == 'enum')
+        for t in local_types if t['type'] == 'enum' and t['type'])
 
     def record_dict(x):
         bq_table = x.get('bq-table')
@@ -280,11 +282,10 @@ def simplify_protocol(protocol):
             'bq_table': bq_table,
             'qualified_name': qname,
             'doc': x.get('doc', NO_DOC_STRING),
-            'title': bq_table or qname,
-            'fields': sorted(['{0}#{1}'.format(qname, f['name']) for f in x['fields']])
-        }
+            'title': bq_table if bq_table is not None else qname,
+            'fields': sorted(['{0}#{1}'.format(qname, f['name']) for f in x['fields']])}
 
-    records = sort_by_qualified_name(record_dict(t) for t in protocol['types'] if t['type'] == 'record')
+    records = sort_by_qualified_name(record_dict(t) for t in local_types if t['type'] == 'record')
 
     return {
         'protocol': protocol['protocol'],
@@ -306,7 +307,7 @@ def extract_fields(p):
         type_name = t['name']
         for f in t.get('fields', []):
             field_name = f['name']
-            field_key = "{0}.{1}#{2}".format(namespace, type_name, field_name)
+            field_key = '{0}.{1}#{2}'.format(namespace, type_name, field_name)
             field_type_dict = dictify_type(f['type'])
             field_type_dict.update({
                 'doc': f.get('doc'),
@@ -317,14 +318,12 @@ def extract_fields(p):
 
 
 def build_protocol_docs(protocol, field_map):
+
     # records
     for dct in protocol.get('records', []):
         file_name = os.path.join('records', dct['qualified_name'] + '.rst')
         fields = (build_field(f, field_map) for f in dct['fields'])
-        yield file_name, TEMPLATE_TABLE.render(
-            qualified_name=dct['qualified_name'],
-            doc=dct['doc'],
-            fields=fields)
+        yield file_name, TEMPLATE_TABLE.render(merge_dicts(dct, {'fields': fields}))
 
     # enums
     for dct in protocol.get('enums', []):
