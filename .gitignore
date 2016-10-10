@@ -6,3 +6,5 @@ schema/generated
 .idea
 *.iml
 generated
+__pycache__
+teftel-docs/teftel_docs.egg-info/
