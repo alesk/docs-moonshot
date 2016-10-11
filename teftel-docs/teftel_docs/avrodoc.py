@@ -2,9 +2,8 @@
 
 import os
 import os.path
-import re
 from pprint import pprint
-from teftel_docs.utils import merge_dicts
+from teftel_docs.utils import merge_dicts, indent_avro_doc, slug
 from itertools import chain
 
 from jinja2 import Environment, FileSystemLoader
@@ -14,16 +13,8 @@ env = Environment(
         os.path.join(os.path.dirname(__file__), 'templates')),
     trim_blocks=True, lstrip_blocks=True)
 
-
-def slug(text):
-    """
-    >>> slug("com.toptal.platform.Role#user_id")
-    'com-toptal-platform-role-user_id'
-    """
-    return re.sub('[^a-z0-9_]+', '-', text.strip().lower())
-
-
 env.filters['slug'] = slug
+env.filters['indent_avro_doc'] = indent_avro_doc
 
 AVRO_PRIMITIVE_TYPES = {'null', 'int', 'long', 'float',
                         'double', 'bytes', 'string', 'boolean'}
@@ -32,15 +23,20 @@ TEMPLATE_ENUM = env.get_template('enum.rst')
 TEMPLATE_PROTOCOL = env.get_template('protocol.rst')
 TEMPLATE_INDEX = env.get_template('index.rst')
 
+MAX_ORIGIN_LEVEL = 10
+
 
 def is_avro_primitive(typ_name):
     return typ_name in AVRO_PRIMITIVE_TYPES
 
 
+def is_date_or_datetime(typ):
+    return typ.endswith('Timestamp') or typ.endswith('Date')
+
+
 def is_linkable(typ_name):
-    datetime_type = typ_name.endswith('Timestamp') or typ_name.endswith('Date')
     avro_primitive = is_avro_primitive(typ_name)
-    return not (datetime_type or avro_primitive)
+    return not (is_date_or_datetime(typ_name) or avro_primitive)
 
 
 def qualify_type(typ, namespace):
@@ -53,12 +49,20 @@ def qualify_type(typ, namespace):
 
     >>> qualify_type('some.name.space.Role', 'some.name.space')
     'some.name.space.Role'
+
+    >>> qualify_type('Date', 'some.name.space')
+    'Date'
+
+    >>> qualify_type('com.toptal.platform.Date', 'some.name.space')
+    'Date'
     """
 
-    if not is_avro_primitive(typ) and '.' not in typ:
-        return '{0}.{1}'.format(namespace, typ)
-    else:
+    if is_date_or_datetime(typ):
+        return typ.split('.')[-1]
+    elif is_avro_primitive(typ) or '.' in typ:
         return typ
+    else:
+        return '{0}.{1}'.format(namespace, typ)
 
 
 def dictify_type(typ):
@@ -152,9 +156,6 @@ def dictify_type(typ):
         raise RuntimeError('Unsupported type: {0}'.format(str(typ)))
 
 
-MAX_ORIGIN_LEVEL = 10
-
-
 def extract_origins(field_map, field):
     """
     returns list of field origins
@@ -240,14 +241,14 @@ def build_field(field_id, field_map):
     namespace, record, name = unlink(field_id)
     field = field_map[field_id]
     origins = extract_origins(field_map, field_id)
-    origin_fields = {o: field_map[o] for o in origins}
-
+    origin_fields = [dict(link=o, **field_map[o]) for o in origins]
+    doc = field['doc']
     ret = merge_dicts(field, {
         'id': field_id,
         'name': name,
-        'doc': field['doc'],
+        'doc': doc,
         'is_linkable': is_linkable(field['type']),
-        'origin_fields': origin_fields
+        'origin_fields': reversed(origin_fields)
     })
     return ret
 

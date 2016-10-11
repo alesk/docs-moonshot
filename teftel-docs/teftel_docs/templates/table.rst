@@ -4,7 +4,7 @@
 =================
 
 {% if doc is not none %}
-{{doc}}
+{{doc | indent_avro_doc(0)}}
 {% else %}
 Documentation missing.
 {% endif %}
@@ -24,21 +24,18 @@ Fields
 {% if field.type.container == 'array' %}[{{ type_link(field) }}]{% else %}{{ type_link(field) }}{% endif %}
 {% endmacro %}
 
+{% macro origin_docs(origin_field) %}
+{% if origin_field.doc %}{{origin_field.doc | indent_avro_doc(2)}} (from :ref:`{{origin_field['link']}} <{{origin_field['link'] | slug}}>`)
+
+{% endif %}
+{% endmacro %}
+
 {% for field in fields %}
 .. _{{field.id | slug}}:
 
 - **{{field.name}}**: {{ type_signature(field) }}, {{ required(field) }}
 
-{% if field.doc is not none %}
-
-  {{field.doc}}
-{% endif %}
-
-{% for link, origin_field in field.origin_fields.items() %}
-{% if origin_field['doc'] is defined %}
-  {{origin_field['doc']}} (:ref:`{{link}} <{{link | slug}}>`)
-{% endif %}
-{% endfor %}
-
+{% if field.doc is not none %}{{field.doc | indent_avro_doc(2)}}{% endif %}
+{% for origin_field in field.origin_fields %}{{ origin_docs(origin_field) }}{% endfor %}
 
 {% endfor %}

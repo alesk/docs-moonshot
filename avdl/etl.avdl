@@ -14,6 +14,35 @@ protocol etl {
     int company_id;
 
     union {null, @origin("com.toptal.platform.Role#id") int} claimer_id;
+
+    /** Very long comment about company */
+    union {null, string} comment;
+  }
+
+
+  @bq-table("enterprises")
+  record Enterprise {
+
+  /** Some comment about `enterprise_id` */
+  @origin("com.toptal.etl.Company#company_id")
+  int enterprise_id;
+
+  /** Enterprise comment
+
+      They are usually longer
+      and more verbose.
+
+      Here is a bulleted list:
+
+      - bla
+      - bla bla
+      - bla bla bla
+
+      Definitions
+        may be part of such a comment */
+
+  union {null, string} enterprise_comment;
+
   }
 
 } 

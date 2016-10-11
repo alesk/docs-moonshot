@@ -4,11 +4,10 @@
 =================
 
 {% if doc is not none %}
-{{doc}}
+{{doc | indent_avro_doc(0)}}
 {% else %}
 Documentation missing.
 {% endif %}
-{{name}}
 
 Symbols
 -------
