@@ -20,8 +20,8 @@ docs: generated/etl.avpr generated/platform.avpr
 
 .PHONY: teftel-docs
 teftel-docs:
-	@python teftel-docs/bin/schema-to-rst.py --protocol-path ../../toptal/teftel/generated --output-path ../../toptal/teftel/teftel-docs/teftel_docs/schema/generated
-	@sphinx-build -b html -d _build/doctrees ../../toptal/teftel/teftel-docs/teftel_docs _build/html -j $(NPROCS)
+	@python teftel-docs/bin/schema-to-rst.py --protocol-path ../../toptal/teftel/generated --output-path ../../toptal/teftel/docs/user/generated/schema
+	@sphinx-build -b html -d _build/doctrees ../../toptal/teftel/docs/user/ _build/html -j $(NPROCS)
 
 .PHONY: lint
 lint: ## lints Python code in accordance to PEP-8
